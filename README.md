@@ -19,3 +19,5 @@ A simple Golang web service with 3 endpoints, containerized with Docker, and dep
 docker build -t welcome-app .
 docker run -p 8080:8080 welcome-app
 ```
+
+## Deploy in Kubernetes
