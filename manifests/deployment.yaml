@@ -6,8 +6,6 @@ metadata:
   name: welcome-app-deployment
   labels:
     app: welcome-app
-  annotations:
-    argocd-image-updater.argoproj.io/image-list: welcome-app=bonyscott/welcome-app
 spec:
   replicas: 2
   selector:
