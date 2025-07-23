@@ -46,8 +46,8 @@ jobs:
           bonyscott/welcome-app:${{ env.SHORT_SHA }}
 
     - name: Update image tag
-        run: |
-          sed -i "s/tag: .*/tag: ${{ env.SHORT_SHA }}/" ./manifests/rollout.yaml
+      run: |
+        sed -i "s/tag: .*/tag: ${{ env.SHORT_SHA }}/" ./manifests/rollout.yaml
 
     - name: Commit and push
       run: |
