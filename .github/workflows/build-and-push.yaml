@@ -35,5 +35,5 @@ jobs:
         context: .
         push: true
         tags: |
-          bonyscott/welcome-app/welcome-app:latest
-          bonyscott/welcome-app/welcome-app:${{ github.sha }}
+          bonyscott/welcome-app:latest
+          bonyscott/welcome-app:${{ github.sha }}
