@@ -1,11 +1,9 @@
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
+  name: welcome-app
   namespace: welcome-app
-  name: welcome-app-deployment
-  labels:
-    app: welcome-app
 spec:
   replicas: 2
   selector:
@@ -18,6 +16,14 @@ spec:
     spec:
       containers:
         - name: welcome-app
-          image: bonyscott/welcome-app:v2
+          image: bonyscott/welcome-app:d39ea3d
           ports:
             - containerPort: 8080
+  strategy:
+    canary:
+      steps:
+        - setWeight: 25
+        - pause: { duration: 30s }
+        - setWeight: 50
+        - pause: { duration: 1m }
+        - setWeight: 100
