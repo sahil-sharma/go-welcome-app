@@ -13,6 +13,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Extract short SHA
+      id: vars
+      run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
     - name: Set up Go 1.24
       uses: actions/setup-go@v4
       with:
@@ -36,4 +40,4 @@ jobs:
         push: true
         tags: |
           bonyscott/welcome-app:latest
-          bonyscott/welcome-app:${{ github.sha }}
+          bonyscott/welcome-app:${{ env.SHORT_SHA }}
