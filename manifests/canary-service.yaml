@@ -2,12 +2,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: welcome-app-stable
+  name: welcome-app-canary
   namespace: welcome-app
 spec:
   selector:
     app: welcome-app
-    rollouts-pod-template-hash: <STABLE_HASH>
+    rollouts-pod-template-hash: <CANARY_HASH>
   ports:
     - port: 80
       targetPort: 8080

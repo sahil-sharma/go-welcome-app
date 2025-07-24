@@ -5,7 +5,19 @@ metadata:
   name: welcome-app
   namespace: welcome-app
 spec:
-  replicas: 2
+  replicas: 4
+  strategy:
+    canary:
+      canaryService: welcome-app-canary
+      stableService: welcome-app-stable
+      trafficRouting:
+        nginx: {}
+      steps:
+        - setWeight: 20
+        - pause: { duration: 30s }
+        - setWeight: 50
+        - pause: { duration: 60s }
+        - setWeight: 100
   selector:
     matchLabels:
       app: welcome-app
@@ -19,11 +31,3 @@ spec:
           image: bonyscott/welcome-app:fc09d47
           ports:
             - containerPort: 8080
-  strategy:
-    canary:
-      steps:
-        - setWeight: 25
-        - pause: { duration: 30s }
-        - setWeight: 50
-        - pause: { duration: 1m }
-        - setWeight: 100
