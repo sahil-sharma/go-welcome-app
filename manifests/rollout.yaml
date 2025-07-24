@@ -28,6 +28,10 @@ spec:
     spec:
       containers:
         - name: welcome-app
+<<<<<<< Updated upstream
           image: bonyscott/welcome-app:fc09d47
+=======
+          image: bonyscott/welcome-app:newtag
+>>>>>>> Stashed changes
           ports:
             - containerPort: 8080
