@@ -12,7 +12,7 @@ spec:
       stableService: welcome-app-stable
       trafficRouting:
         nginx:
-          stableIngress: primary-ingress
+          stableIngress: welcome-app-ingress
       steps:
         - setWeight: 20
         - pause: { duration: 30s }
