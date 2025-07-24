@@ -47,7 +47,7 @@ jobs:
 
     - name: Update image tag
       run: |
-        sed -i 's|\(image: bonyscott/welcome-app:\).*|\1'"${{ env.SHORT_SHA }}"'|' ./manifests/rollout.yaml
+        sed -i 's|\(image: [^:]*:\)[^ ]*|\1'"${{ env.SHORT_SHA }}"'|' ./manifests/rollout.yaml
         grep 'image:' ./manifests/rollout.yaml
 
     - name: Commit and push
