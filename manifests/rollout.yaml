@@ -11,7 +11,8 @@ spec:
       canaryService: welcome-app-canary
       stableService: welcome-app-stable
       trafficRouting:
-        nginx: {}
+        nginx:
+          stableIngress: primary-ingress
       steps:
         - setWeight: 20
         - pause: { duration: 30s }
