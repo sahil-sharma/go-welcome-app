@@ -13,8 +13,8 @@ RUN go build -o welcome-app
 FROM ubuntu:24.04
 
 # Install CA certificates (required for HTTPS requests)
-# RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && \ 
-#     rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && \ 
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
