@@ -1,5 +1,6 @@
 resources:
-  - rollout.yaml
+  #- rollout.yaml
+  - deployment.yaml
   - service.yaml
   - ingress.yaml
-  - canary-service.yaml
+  #- canary-service.yaml-
