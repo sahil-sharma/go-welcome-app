@@ -33,7 +33,7 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 	currentTime := time.Now().Format(time.RFC1123)
 
 	response := fmt.Sprintf(`
-Hello, Welcome to the Golang App: V3
+Hello, Welcome to the meetup!
 Host: %s
 Username: %s
 Date & Time: %s
