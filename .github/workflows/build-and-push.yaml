@@ -49,11 +49,13 @@ jobs:
       run: |
         sed -i 's|\(image: [^:]*:\)[^ ]*|\1'"${{ env.SHORT_SHA }}"'|' ./manifests/rollout.yaml
         grep 'image:' ./manifests/rollout.yaml
+        grep 'image:' ./manifests/deployment.yaml
 
     - name: Commit and push
       run: |
         git config --global user.email "sahil.sharma@abc.com"
         git config --global user.name "sahil-sharma"
         git add ./manifests/rollout.yaml
+        git add ./manifests/deployment.yaml
         git commit -m "From CI: Update image tag to ${{ env.SHORT_SHA }}"
         git push origin main
