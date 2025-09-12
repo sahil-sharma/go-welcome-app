@@ -48,6 +48,7 @@ jobs:
     - name: Update image tag
       run: |
         sed -i 's|\(image: [^:]*:\)[^ ]*|\1'"${{ env.SHORT_SHA }}"'|' ./manifests/rollout.yaml
+        sed -i 's|\(image: [^:]*:\)[^ ]*|\1'"${{ env.SHORT_SHA }}"'|' ./manifests/deployment.yaml
         grep 'image:' ./manifests/rollout.yaml
         grep 'image:' ./manifests/deployment.yaml
 
