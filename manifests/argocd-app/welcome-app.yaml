@@ -14,7 +14,7 @@ spec:
   sources:
     - repoURL: 'https://github.com/sahil-sharma/go-welcome-app.git'
       targetRevision: main
-      path: manifests/
+      path: manifests/argocd-app/
       kustomize: {}
   revisionHistoryLimit: 2
   syncPolicy:
