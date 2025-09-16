@@ -4,8 +4,6 @@ kind: Application
 metadata:
   name: welcome-app
   namespace: argocd
-  annotations:
-    argocd-image-updater.argoproj.io/image-list: welcome-app=bonyscott/welcome-app
 spec:
   project: default
   destination:
