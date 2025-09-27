@@ -15,6 +15,7 @@ spec:
       labels:
         app: welcome-app
     spec:
+      serviceAccountName: welcome-app-service-account
       containers:
         - name: welcome-app
           image: bonyscott/welcome-app:eb7929b
@@ -28,5 +29,5 @@ spec:
               cpu: "500m"
               memory: "256Mi"
           envFrom:
-        - secretRef:
-            name: welcome-app-secret
+          - secretRef:
+              name: welcome-app-secret
