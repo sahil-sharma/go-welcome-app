@@ -40,6 +40,10 @@ func main() {
 // --- Middleware to log requests ---
 func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/favicon.ico" {
+			next(w, r)
+			return
+		}
 		start := time.Now()
 		logJSON("info", "Started request", r.Method, r.URL.Path, r.RemoteAddr, "", "", nil)
 
