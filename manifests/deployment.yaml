@@ -27,3 +27,6 @@ spec:
             limits:
               cpu: "500m"
               memory: "256Mi"
+          envFrom:
+        - secretRef:
+            name: welcome-app-secret
