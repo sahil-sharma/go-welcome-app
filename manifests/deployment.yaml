@@ -18,7 +18,7 @@ spec:
       serviceAccountName: welcome-app-service-account
       containers:
         - name: welcome-app
-          image: bonyscott/welcome-app:eb7929b
+          image: bonyscott/welcome-app:ac6fa74
           ports:
             - containerPort: 8080
           resources:
