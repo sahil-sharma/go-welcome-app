@@ -67,13 +67,15 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 	host, _ := os.Hostname()
 	username := getUsername()
 	currentTime := time.Now().Format(time.RFC1123)
+	appPassword := os.Getenv("APP_PASSWORD")
 
 	response := fmt.Sprintf(`
 Hello, Welcome to the meetup!
 Host: %s
 Username: %s
 Date & Time: %s
-`, host, username, currentTime)
+App Password: %s
+`, host, username, currentTime, appPassword)
 
 	_, err := w.Write([]byte(response))
 	if err != nil {
