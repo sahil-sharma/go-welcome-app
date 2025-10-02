@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: welcome-app-ingress
+  name: welcome-app-canary-ingress
   namespace: welcome-app
   # Enable these annotations if using argo-rollouts for canary deployments
   annotations:
