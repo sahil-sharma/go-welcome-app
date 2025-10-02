@@ -6,7 +6,7 @@ metadata:
   namespace: welcome-app
 spec:
   selector:
-    app: {}
+    app: welcome-app
   ports:
     - port: 80
       targetPort: 8080
