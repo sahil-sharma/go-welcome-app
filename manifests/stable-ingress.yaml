@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: welcome-app-ingress
+  name: welcome-app-stable-ingress
   namespace: welcome-app
 spec:
   ingressClassName: nginx
@@ -14,20 +14,20 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: welcome-app-service
+                name: welcome-app-stable
                 port:
                   number: 80
           - path: /external
             pathType: Prefix
             backend:
               service:
-                name: welcome-app-service
+                name: welcome-app-stable
                 port:
                   number: 80
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: welcome-app-service
+                name: welcome-app-stable
                 port:
                   number: 80

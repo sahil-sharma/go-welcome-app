@@ -1,7 +1,9 @@
 resources:
   # - deployment.yaml
   # - service.yaml
-  - ingress.yaml
+  # - ingress.yaml
+  - canaryingress.yaml
+  - stable-ingress.yaml
   - service-account.yaml
   - secret-store.yaml
   - external-secrets.yaml
