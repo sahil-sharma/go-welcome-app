@@ -4,9 +4,10 @@ kind: Ingress
 metadata:
   name: welcome-app-ingress
   namespace: welcome-app
-  # annotations:
-  #   nginx.ingress.kubernetes.io/canary: "true"
-  #   nginx.ingress.kubernetes.io/canary-by-weight: "20"
+  # Enable these annotations if using argo-rollouts for canary deployments
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-by-weight: "20"
 spec:
   ingressClassName: nginx
   rules:
