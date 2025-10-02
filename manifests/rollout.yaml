@@ -8,11 +8,11 @@ spec:
   replicas: 4
   strategy:
     canary:
-      canaryService: welcome-app-canary
-      stableService: welcome-app-stable
+      canaryService: welcome-app-canary-service
+      stableService: welcome-app-stable-service
       trafficRouting:
         nginx:
-          stableIngress: welcome-app-ingress
+          stableIngress: welcome-app-stable-ingress
       steps:
         - setWeight: 20
         - pause: { duration: 30s }
