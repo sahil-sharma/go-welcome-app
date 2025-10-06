@@ -3,8 +3,8 @@ resources:
   - service.yaml
   - ingress.yaml
   - service-account.yaml
-  - secret-store.yaml
-  - external-secrets.yaml
+  # - secret-store.yaml
+  # - external-secrets.yaml
   # - canary-service.yaml
   # - canary-ingress.yaml
   # - stable-service.yaml
