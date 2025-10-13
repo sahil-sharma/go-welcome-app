@@ -29,6 +29,6 @@ spec:
     spec:
       containers:
         - name: welcome-app
-          image: bonyscott/welcome-app:0794c99
+          image: bonyscott/welcome-app:23762ef
           ports:
             - containerPort: 8080
