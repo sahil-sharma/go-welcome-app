@@ -109,7 +109,7 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 	appPassword := os.Getenv("APP_PASSWORD")
 
 	response := fmt.Sprintf(`
-Hello, Welcome to the meetup edition @ Dynatrace!!!
+Hello, Welcome to the meetup!!!
 Host: %s
 Username: %s
 Date & Time: %s
