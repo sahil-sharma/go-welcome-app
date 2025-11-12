@@ -7,7 +7,10 @@ COPY . .
 
 # Ensure a statically linked binary (no glibc dependencies)
 ENV CGO_ENABLED=0
-RUN go build -o welcome-app
+
+COPY go.mod ./
+RUN go mod download \
+    && go build -o welcome-app
 
 # ---- Runtime Stage ----
 FROM ubuntu:24.04

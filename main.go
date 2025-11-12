@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,13 @@ import (
 	"os"
 	"os/user"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/sdk/metric"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // JSONLog is the structure for log entries
@@ -24,9 +32,17 @@ type JSONLog struct {
 }
 
 func main() {
-	http.HandleFunc("/", loggingMiddleware(rootHandler))
-	http.HandleFunc("/welcome", loggingMiddleware(welcomeHandler))
-	http.HandleFunc("/external", loggingMiddleware(externalHandler))
+	// --- Initialize OpenTelemetry (tracing + metrics) ---
+	ctx := context.Background()
+	tp := initTracer()
+	defer func() { _ = tp.Shutdown(ctx) }()
+	mp := initMetrics()
+
+	http.Handle("/metrics", promHandler(mp))
+
+	http.Handle("/", loggingMiddleware(otelhttp.NewHandler(http.HandlerFunc(rootHandler), "root")))
+	http.Handle("/welcome", loggingMiddleware(otelhttp.NewHandler(http.HandlerFunc(welcomeHandler), "welcome")))
+	http.Handle("/external", loggingMiddleware(otelhttp.NewHandler(http.HandlerFunc(externalHandler), "external")))
 
 	port := "8080"
 	address := "0.0.0.0:" + port
@@ -35,6 +51,29 @@ func main() {
 	if err != nil {
 		fmt.Println("Server error:", err)
 	}
+}
+
+// --- Setup Tracing ---
+func initTracer() *sdktrace.TracerProvider {
+	exp, _ := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+	)
+	otel.SetTracerProvider(tp)
+	return tp
+}
+
+// --- Setup Metrics ---
+func initMetrics() *metric.MeterProvider {
+	exp, _ := prometheus.New()
+	mp := metric.NewMeterProvider(metric.WithReader(exp))
+	otel.SetMeterProvider(mp)
+	return mp
+}
+
+func promHandler(mp *metric.MeterProvider) http.Handler {
+	exp, _ := prometheus.New()
+	return exp
 }
 
 // --- Middleware to log requests ---
@@ -55,7 +94,6 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // --- Handlers ---
-
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := w.Write([]byte("Hello World!"))
 	if err != nil {
@@ -101,6 +139,7 @@ func externalHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// --- Utilities ---
 func getUsername() string {
 	u, err := user.Current()
 	if err == nil && u.Username != "" {
