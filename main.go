@@ -10,13 +10,6 @@ import (
 	"os"
 	"os/user"
 	"time"
-
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	"go.opentelemetry.io/otel/sdk/metric"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // JSONLog is the structure for log entries
@@ -31,25 +24,51 @@ type JSONLog struct {
 	Error     string `json:"error,omitempty"`
 }
 
+// Global metrics
+var (
+	requestCount   metric.Int64Counter
+	requestLatency metric.Float64Histogram
+)
+
 func main() {
-	// --- Initialize OpenTelemetry (tracing + metrics) ---
-	ctx := context.Background()
-	tp := initTracer()
-	defer func() { _ = tp.Shutdown(ctx) }()
-	mp := initMetrics()
-
-	http.Handle("/metrics", promHandler(mp))
-
-	http.Handle("/", loggingMiddleware(otelhttp.NewHandler(http.HandlerFunc(rootHandler), "root")))
-	http.Handle("/welcome", loggingMiddleware(otelhttp.NewHandler(http.HandlerFunc(welcomeHandler), "welcome")))
-	http.Handle("/external", loggingMiddleware(otelhttp.NewHandler(http.HandlerFunc(externalHandler), "external")))
+	http.HandleFunc("/", loggingMiddleware(rootHandler))
+	http.HandleFunc("/welcome", loggingMiddleware(welcomeHandler))
+	http.HandleFunc("/external", loggingMiddleware(externalHandler))
 
 	port := "8080"
 	address := "0.0.0.0:" + port
-	fmt.Println("Server started on address:", address)
-	err := http.ListenAndServe(address, nil)
-	if err != nil {
-		fmt.Println("Server error:", err)
+	fmt.Println("Server started on", address)
+	if err := http.ListenAndServe(address, mux); err != nil {
+		log.Fatal("Server error:", err)
+	}
+}
+
+// --- OTEL setup ---
+func setupOTel(ctx context.Context) func(context.Context) error {
+	res, _ := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceName("otel-go-demo"),
+		),
+	)
+
+	// Trace exporter (stdout)
+	traceExporter, _ := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(traceExporter),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+
+	// Metric exporter (stdout)
+	metricExporter, _ := stdoutmetric.New()
+	metricProcessor := basic.New(simple.NewWithHistogramDistribution())
+	ctrl := basic.New(metricProcessor, metricExporter)
+	ctrl.Start(ctx)
+	otel.SetMeterProvider(ctrl.MeterProvider())
+
+	return func(ctx context.Context) error {
+		_ = ctrl.Stop(ctx)
+		return tp.Shutdown(ctx)
 	}
 }
 
@@ -76,37 +95,56 @@ func promHandler(mp *metric.MeterProvider) http.Handler {
 	return exp
 }
 
-// --- Middleware to log requests ---
+// --- Middleware with tracing, metrics, and logs ---
 func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/favicon.ico" {
 			next(w, r)
 			return
 		}
+
+		ctx, span := otel.Tracer("otel-go-demo").Start(r.Context(), r.URL.Path)
 		start := time.Now()
+
 		logJSON("info", "Started request", r.Method, r.URL.Path, r.RemoteAddr, "", "", nil)
 
-		next(w, r)
+		next(w, r.WithContext(ctx))
 
 		duration := time.Since(start)
+		requestCount.Add(ctx, 1, metric.WithAttributes(attribute.String("path", r.URL.Path)))
+		requestLatency.Record(ctx, duration.Seconds(), metric.WithAttributes(attribute.String("path", r.URL.Path)))
+
 		logJSON("info", "Completed request", r.Method, r.URL.Path, r.RemoteAddr, duration.String(), "", nil)
+		span.SetAttributes(attribute.String("method", r.Method), attribute.String("path", r.URL.Path))
+		span.End()
 	}
 }
 
 // --- Handlers ---
 func rootHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	span := traceFromContext(ctx, "rootHandler")
+	defer span.End()
+
 	_, err := w.Write([]byte("Hello World!"))
 	if err != nil {
+		span.RecordError(err)
 		logJSON("error", "Error writing response", r.Method, r.URL.Path, r.RemoteAddr, "", "", err)
 	}
 }
 
 func welcomeHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	span := traceFromContext(ctx, "welcomeHandler")
+	defer span.End()
+
 	host, _ := os.Hostname()
 	username := getUsername()
 	currentTime := time.Now().Format(time.RFC1123)
 	appUsername := os.Getenv("APP_USERNAME")
 	appPassword := os.Getenv("APP_PASSWORD")
+	appEnvName := os.Getenv("APP_ENV_NAME")
+	webhookTestKey := os.Getenv("WEBHOOK_TEST_KEY")
 
 	response := fmt.Sprintf(`
 Hello, Welcome to the meetup!!!
@@ -115,31 +153,39 @@ Username: %s
 Date & Time: %s
 App Username: %s
 App Password: %s
-`, host, username, currentTime, appUsername, appPassword)
+App Environment Name: %s
+Webhook Test Key: %s
+`, host, username, currentTime, appUsername, appPassword, appEnvName, webhookTestKey)
 
 	_, err := w.Write([]byte(response))
 	if err != nil {
+		span.RecordError(err)
 		logJSON("error", "Error writing response", r.Method, r.URL.Path, r.RemoteAddr, "", "", err)
 	}
 }
 
 func externalHandler(w http.ResponseWriter, r *http.Request) {
-	resp, err := http.Get("https://httpbin.org/get")
+	ctx := r.Context()
+	span := traceFromContext(ctx, "externalHandler")
+	defer span.End()
+
+	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+	resp, err := client.Get("https://httpbin.org/get")
 	if err != nil {
+		span.RecordError(err)
 		http.Error(w, "Failed to reach httpbin.org", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
 
-	// Forward content type & response
 	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
+		span.RecordError(err)
 		logJSON("error", "Error forwarding response", r.Method, r.URL.Path, r.RemoteAddr, "", "", err)
 	}
 }
 
-// --- Utilities ---
 func getUsername() string {
 	u, err := user.Current()
 	if err == nil && u.Username != "" {
@@ -154,7 +200,6 @@ func getUsername() string {
 	return "unknown"
 }
 
-// --- JSON logger ---
 func logJSON(level, msg, method, path, remote, duration, extra string, err error) {
 	entry := JSONLog{
 		Timestamp: time.Now().Format(time.RFC3339),
@@ -165,14 +210,12 @@ func logJSON(level, msg, method, path, remote, duration, extra string, err error
 		Remote:    remote,
 		Duration:  duration,
 	}
-
 	if err != nil {
 		entry.Error = err.Error()
 	}
 	if extra != "" {
-		entry.Message = entry.Message + " - " + extra
+		entry.Message += " - " + extra
 	}
-
 	data, _ := json.Marshal(entry)
 	log.Println(string(data))
 }
