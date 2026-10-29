@@ -6,7 +6,7 @@ Returns a welcome message. Used as the reference Go service on our platform.
 |---|---|
 | Owner | go-app-team |
 | Language | Go |
-| Image | `docker.io/<dockerhub-user>/go-welcome-app` |
+| Image | `docker.io/sahilwork/go-welcome-app` |
 | Deployed by | Argo CD, from `k8s-stuff/apps/go-welcome-app` |
 | URL | https://welcome.local.io |
 
