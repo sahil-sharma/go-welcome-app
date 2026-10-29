@@ -7,7 +7,7 @@ metadata:
   annotations:
     github.com/project-slug: sahil-sharma/go-welcome-app
     argocd/app-name: go-welcome-app
-    backstage.io/kubernetes-label-selector: app=go-welcome-app
+    backstage.io/kubernetes-label-selector: app.kubernetes.io/name=go-welcome-app
     backstage.io/kubernetes-namespace: go-welcome-app
     vault.io/secrets-path: apps/go-welcome-app
     backstage.io/techdocs-ref: dir:.
