@@ -1,0 +1,37 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: go-welcome-app
+  description: Welcome service in Go
+  tags: [go]
+  annotations:
+    github.com/project-slug: sahil-sharma/go-welcome-app
+    argocd/app-name: go-welcome-app
+    backstage.io/kubernetes-label-selector: app=go-welcome-app
+    backstage.io/kubernetes-namespace: go-welcome-app
+    vault.io/secrets-path: apps/go-welcome-app
+    backstage.io/techdocs-ref: dir:.
+  links:
+    - title: Open app
+      url: https://welcome.local.io
+      icon: dashboard
+    - title: Argo CD
+      url: https://cd.local.io/applications/argocd/go-welcome-app
+      icon: dashboard
+    - title: CI (GitHub Actions)
+      url: https://github.com/sahil-sharma/go-welcome-app/actions
+      icon: github
+    - title: Deployment manifests
+      url: https://github.com/sahil-sharma/k8s-stuff/tree/main/argocd-apps/go-welcome-app
+      icon: github
+    - title: Secrets (Vault)
+      url: https://secrets.local.io/ui/vault/secrets/secret/kv/list/apps/go-welcome-app/
+      icon: dashboard
+    - title: Grafana dashboard
+      url: https://dashboards.local.io/d/service-overview?var-namespace=go-welcome-app
+      icon: dashboard
+spec:
+  type: service
+  lifecycle: production
+  owner: group:default/go-app-team
+  system: idp-demo
