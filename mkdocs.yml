@@ -1,0 +1,8 @@
+site_name: go-welcome-app
+site_description: Hello-world welcome service in Go
+nav:
+  - Overview: index.md
+  - Architecture: architecture.md
+  - Runbook: runbook.md
+plugins:
+  - techdocs-core
