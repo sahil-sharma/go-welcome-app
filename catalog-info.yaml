@@ -22,7 +22,7 @@ metadata:
       url: https://github.com/sahil-sharma/go-welcome-app/actions
       icon: github
     - title: Deployment manifests
-      url: https://github.com/sahil-sharma/k8s-stuff/tree/main/argocd-apps/go-welcome-app
+      url: https://github.com/sahil-sharma/k8s-stuff/tree/main/apps/go-welcome-app
       icon: github
     - title: Secrets (Vault)
       url: https://secrets.local.io/ui/vault/secrets/secret/kv/list/apps/go-welcome-app/
