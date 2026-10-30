@@ -25,7 +25,7 @@ metadata:
       url: https://github.com/sahil-sharma/k8s-stuff/tree/main/apps/go-welcome-app
       icon: github
     - title: Secrets (Vault)
-      url: https://secrets.local.io/ui/vault/secrets/secret/kv/list/apps/go-welcome-app/
+      url: https://secrets.local.io/ui/vault/secrets-engines/apps/kv/go-welcome-app/
       icon: dashboard
     - title: Grafana dashboard
       url: https://dashboards.local.io/d/service-overview?var-namespace=go-welcome-app
