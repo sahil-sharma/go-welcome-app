@@ -113,6 +113,16 @@ func initMetrics() *sdkmetric.MeterProvider {
 // --- Middleware with tracing, metrics, and logs ---
 func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers for all incoming requests
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle HTTP OPTIONS preflight checks from browsers immediately
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		if r.URL.Path == "/favicon.ico" {
 			next(w, r)
 			return
