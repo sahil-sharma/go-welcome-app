@@ -5,16 +5,17 @@ on:
     workflows: ["Build Go Welcome App and Push Docker image"]
     types:
       - completed
-  workflow_dispatch: # Allows manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag / Short SHA to deploy (e.g., 23762ef or latest). Leave blank if triggered via workflow_run."
+        required: false
+        type: string
 
 jobs:
   raise-pr:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
-
-    # Use GitHub expressions to dynamically select the correct SHA based on how it was triggered
-    env:
-      TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
 
     steps:
       - name: Checkout Target K8s Repository
@@ -24,12 +25,25 @@ jobs:
           token: ${{ secrets.PAT_FOR_K8S_REPO }}
           path: helm-repo
 
-      - name: Set Short SHA
+      - name: Determine Target Short SHA
         run: |
-          # Slice the TARGET_SHA to 7 characters
-          SHORT_SHA=$(echo "${{ env.TARGET_SHA }}" | cut -c1-7)
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Use manual input if provided, otherwise default to 'latest'
+            INPUT_TAG="${{ github.event.inputs.image_tag }}"
+            if [ -z "$INPUT_TAG" ]; then
+              SHORT_SHA="latest"
+            else
+              SHORT_SHA="$INPUT_TAG"
+            fi
+            echo "Triggered manually with tag/SHA: $SHORT_SHA"
+          else
+            # Automatically grab the first 7 chars of the commit that successfully built the image
+            FULL_SHA="${{ github.event.workflow_run.head_sha }}"
+            SHORT_SHA=$(echo "$FULL_SHA" | cut -c1-7)
+            echo "Triggered automatically by build run. Full SHA: $FULL_SHA -> Short: $SHORT_SHA"
+          fi
+
           echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
-          echo "Using SHA: ${{ env.TARGET_SHA }} -> Short: $SHORT_SHA"
 
       - name: Update Deployment Image Tag
         run: |
@@ -63,6 +77,6 @@ jobs:
             --base main \
             --head "$BRANCH_NAME" \
             --title "chore(deps): update go-welcome-app image tag to ${{ env.SHORT_SHA }}" \
-            --body "Automated PR updating the \`go-welcome-app\` image tag in \`apps/go-welcome-app/deployment.yaml\` to commit \`${{ env.SHORT_SHA }}\`."
+            --body "Automated PR updating the \`go-welcome-app\` image tag in \`apps/go-welcome-app/deployment.yaml\` to tag/commit \`${{ env.SHORT_SHA }}\`."
         env:
           GH_TOKEN: ${{ secrets.PAT_FOR_K8S_REPO }}
