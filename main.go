@@ -193,7 +193,7 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 	webhookTestKey := os.Getenv("WEBHOOK_TEST_KEY")
 
 	response := fmt.Sprintf(`
-Hello, Welcome to the world, folks!!!
+Hello, Welcome to CNCF world, folks!!!
 Host: %s
 Username: %s
 Date & Time: %s
