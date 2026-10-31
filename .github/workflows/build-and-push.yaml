@@ -16,7 +16,7 @@ permissions:
 
 env:
   GO_VERSION: 1.26
-  APP_NAME: welcome-app
+  APP_NAME: go-welcome-app
 
 jobs:
   build-and-push:
