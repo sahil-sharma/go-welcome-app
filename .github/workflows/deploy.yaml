@@ -5,6 +5,7 @@ on:
         workflows: ["Build Welcome App and Push Docker image"]
         types:
             - completed
+    workflow_dispatch: # Allows manual trigger for testing
 
 jobs:
     raise-pr:
