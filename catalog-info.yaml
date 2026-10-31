@@ -38,6 +38,7 @@ spec:
   providesApis:
     - go-welcome-api
 ---
+---
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
@@ -55,6 +56,9 @@ spec:
       title: Go Welcome API
       version: 1.0.0
       description: Endpoints provided by go-welcome-app
+    servers:
+      - url: https://welcome.local.io
+        description: Local Ingress / Application Endpoint
     paths:
       /:
         get:
