@@ -1,14 +1,13 @@
-name: Build Welcome App and Push Docker image
-
+name: Build Go Welcome App and Push Docker image
 on:
   push:
     branches:
       - main
     paths:
-      - '**.go'
-    pull_request:
-
-
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+  pull_request:
 
 permissions:
   contents: write
@@ -16,78 +15,51 @@ permissions:
   pull-requests: write
 
 env:
-  GO_VERSION: 1.25
+  GO_VERSION: 1.26
   APP_NAME: welcome-app
 
 jobs:
-  lint:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v7
 
-    - name: Setup Node (for semantic-release)
-      uses: actions/setup-node@v6
-      with:
-        node-version: 24
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-    - name: Install Dependencies
-      run: go mod download
-    
-    - name: Verify Dependencies
-      run: go mod verify
-    - name: Lint ${{ env.APP_NAME }}
-      run: go vet ./...
+      - name: Install Dependencies
+        run: go mod download
 
-    - name: Set up Go 1.25
-      uses: actions/setup-go@v6
-      with:
-        go-version: 1.25
+      - name: Verify Dependencies
+        run: go mod verify
 
-    - name: Install semantic-release
-      run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github
+      - name: Lint ${{ env.APP_NAME }}
+        run: go vet ./...
 
-    - name: Run semantic-release
-      id: release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npx semantic-release --branches main
+      - name: Build Go binary
+        run: |
+          go mod tidy
+          go build -o ${{ env.APP_NAME }}
 
-    - name: Build Go binary
-      run: |
-        go mod tidy
-        go build -o welcome-app
+      - name: Extract Short SHA
+        id: extract_sha
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        push: true
-        tags: |
-          bonyscott/welcome-app:latest
-          bonyscott/welcome-app:${{ env.SHORT_SHA }}
-
-    - name: Update image tag
-      run: |
-        sed -i 's|\(image: [^:]*:\)[^ ]*|\1'"${{ env.SHORT_SHA }}"'|' ./manifests/rollout.yaml
-        sed -i 's|\(image: [^:]*:\)[^ ]*|\1'"${{ env.SHORT_SHA }}"'|' ./manifests/deployment.yaml
-        sed -i 's|\(image: [^:]*:\)[^ ]*|\1'"${{ env.SHORT_SHA }}"'|' ./talk/deployment.yaml
-        grep 'image:' ./manifests/rollout.yaml
-        grep 'image:' ./manifests/deployment.yaml
-
-    - name: Commit and push
-      run: |
-        git config --global user.email "sahil.sharma@abc.com"
-        git config --global user.name "sahil-sharma"
-        git add ./manifests/rollout.yaml
-        git add ./manifests/deployment.yaml
-        git commit -m "From CI: Update image tag to ${{ env.SHORT_SHA }}"
-        git push origin main
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            sahilwork/go-welcome-app:latest
+            sahilwork/go-welcome-app:${{ env.SHORT_SHA }}

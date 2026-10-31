@@ -1,5 +1,5 @@
 # ---- Builder Stage ----
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 
 WORKDIR /app
 
@@ -9,9 +9,8 @@ RUN go mod download
 COPY . .
 
 # Ensure a statically linked binary (no glibc dependencies)
-=======
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-RUN go build -trimpath -ldflags="-s -w" -o welcome-app .
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o welcome-app .
 
 # ---- Runtime Stage ----
 FROM ubuntu:24.04
