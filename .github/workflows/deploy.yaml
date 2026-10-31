@@ -12,6 +12,10 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
 
+    # Use GitHub expressions to dynamically select the correct SHA based on how it was triggered
+    env:
+      TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+
     steps:
       - name: Checkout Target K8s Repository
         uses: actions/checkout@v7
@@ -20,17 +24,12 @@ jobs:
           token: ${{ secrets.PAT_FOR_K8S_REPO }}
           path: helm-repo
 
-      - name: Extract and Export Short SHA
+      - name: Set Short SHA
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            FULL_SHA="${{ github.sha }}"
-          else
-            FULL_SHA="${{ github.event.workflow_run.head_sha }}"
-          fi
-
-          SHORT_SHA=$(echo "$FULL_SHA" | cut -c1-7)
+          # Slice the TARGET_SHA to 7 characters
+          SHORT_SHA=$(echo "${{ env.TARGET_SHA }}" | cut -c1-7)
           echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
-          echo "Triggered via ${{ github.event_name }} - Full SHA: $FULL_SHA -> Short SHA: $SHORT_SHA"
+          echo "Using SHA: ${{ env.TARGET_SHA }} -> Short: $SHORT_SHA"
 
       - name: Update Deployment Image Tag
         run: |
@@ -42,7 +41,7 @@ jobs:
           MANIFEST_PATH="./apps/go-welcome-app/deployment.yaml"
 
           # Safely update the image tag while preserving the container/registry prefix
-          sed -i 's|\(image: .*/go-welcome-app:\)[^ ]*|\1'"${{ env.env.SHORT_SHA || env.SHORT_SHA }}"'|' "$MANIFEST_PATH"
+          sed -i 's|\(image: .*/go-welcome-app:\)[^ ]*|\1'"${{ env.SHORT_SHA }}"'|' "$MANIFEST_PATH"
 
           # Verify change was applied
           grep 'image:' "$MANIFEST_PATH"
