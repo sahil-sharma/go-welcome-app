@@ -35,3 +35,40 @@ spec:
   lifecycle: production
   owner: group:default/go-app-team
   system: idp-demo
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: go-welcome-api
+  title: Go Welcome API
+  description: OpenAPI spec for the go-welcome-app HTTP endpoints (/welcome, /external).
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:default/go-app-team
+  system: idp-demo
+  definition: |
+    openapi: 3.0.3
+    info:
+      title: Go Welcome API
+      version: 1.0.0
+      description: Endpoints provided by go-welcome-app
+    paths:
+      /:
+        get:
+          summary: Simple hello endpoint
+          responses:
+            '200':
+              description: OK
+      /welcome:
+        get:
+          summary: Returns hostname, container user, and timestamp
+          responses:
+            '200':
+              description: OK
+      /external:
+        get:
+          summary: Fetches data from external HTTP endpoint
+          responses:
+            '200':
+              description: OK
