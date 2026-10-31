@@ -13,6 +13,7 @@ permissions:
   contents: write
   packages: write
   pull-requests: write
+  security-events: write
 
 env:
   GO_VERSION: 1.26
@@ -55,11 +56,28 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
+      - name: Build Docker image locally
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true # Loads image into local Docker runtime for scanning
+          tags: |
+            sahilwork/${{ env.APP_NAME }}:latest
+            sahilwork/${{ env.APP_NAME }}:${{ env.SHORT_SHA }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v.0.36.0
+        with:
+          image-ref: "sahilwork/${{ env.APP_NAME }}:${{ env.SHORT_SHA }}"
+          format: "table"
+          exit-code: "1" # Fail the pipeline if vulnerabilities are found (change to '0' if you only want reports without failing)
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      - name: Push Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
           tags: |
-            sahilwork/go-welcome-app:latest
-            sahilwork/go-welcome-app:${{ env.SHORT_SHA }}
+            sahilwork/${{ env.APP_NAME }}:latest
+            sahilwork/${{ env.APP_NAME }}:${{ env.SHORT_SHA }}
