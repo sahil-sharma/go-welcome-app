@@ -14,12 +14,15 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // JSONLog is the structure for log entries
@@ -41,6 +44,10 @@ var (
 )
 
 func main() {
+	ctx := context.Background()
+	shutdown := setupOTel(ctx)
+	defer shutdown(ctx)
+
 	http.HandleFunc("/", loggingMiddleware(rootHandler))
 	http.HandleFunc("/welcome", loggingMiddleware(welcomeHandler))
 	http.HandleFunc("/external", loggingMiddleware(externalHandler))
@@ -48,6 +55,7 @@ func main() {
 	port := "8080"
 	address := "0.0.0.0:" + port
 	fmt.Println("Server started on", address)
+
 	// Pass nil to use http.DefaultServeMux
 	if err := http.ListenAndServe(address, nil); err != nil {
 		log.Fatal("Server error:", err)
@@ -72,11 +80,14 @@ func setupOTel(ctx context.Context) func(context.Context) error {
 
 	// Metric exporter (stdout)
 	metricExporter, _ := stdoutmetric.New()
-	// Using basic meter provider configuration or standard setup
-	mp := metric.NewMeterProvider()
+	mp := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter)),
+	)
 	otel.SetMeterProvider(mp)
 
 	return func(ctx context.Context) error {
+		_ = mp.Shutdown(ctx)
 		return tp.Shutdown(ctx)
 	}
 }
@@ -89,6 +100,14 @@ func initTracer() *sdktrace.TracerProvider {
 	)
 	otel.SetTracerProvider(tp)
 	return tp
+}
+
+// --- Setup Metrics ---
+func initMetrics() *sdkmetric.MeterProvider {
+	exp, _ := prometheus.New()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(exp))
+	otel.SetMeterProvider(mp)
+	return mp
 }
 
 // --- Middleware with tracing, metrics, and logs ---
@@ -108,17 +127,28 @@ func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		duration := time.Since(start)
 
-		// Ensure meter is initialized before recording
+		// Ensure meter instruments are initialized before recording
 		meter := otel.Meter("go-welcome-app")
+		var err error
 		if requestCount == nil {
-			requestCount, _ = meter.Int64Counter("http.server.requests")
+			requestCount, err = meter.Int64Counter("http.server.requests")
+			if err != nil {
+				log.Printf("Failed to create requestCount counter: %v", err)
+			}
 		}
 		if requestLatency == nil {
-			requestLatency, _ = meter.Float64Histogram("http.server.duration")
+			requestLatency, err = meter.Float64Histogram("http.server.duration")
+			if err != nil {
+				log.Printf("Failed to create requestLatency histogram: %v", err)
+			}
 		}
 
-		requestCount.Add(ctx, 1, metric.WithAttributes(attribute.String("path", r.URL.Path)))
-		requestLatency.Record(ctx, duration.Seconds(), metric.WithAttributes(attribute.String("path", r.URL.Path)))
+		if requestCount != nil {
+			requestCount.Add(ctx, 1, metric.WithAttributes(attribute.String("path", r.URL.Path)))
+		}
+		if requestLatency != nil {
+			requestLatency.Record(ctx, duration.Seconds(), metric.WithAttributes(attribute.String("path", r.URL.Path)))
+		}
 
 		logJSON("info", "Completed request", r.Method, r.URL.Path, r.RemoteAddr, duration.String(), "", nil)
 		span.SetAttributes(attribute.String("method", r.Method), attribute.String("path", r.URL.Path))
@@ -206,8 +236,8 @@ func getUsername() string {
 	return "unknown"
 }
 
-// Helper for tracing span context if not declared elsewhere
-func traceFromContext(ctx context.Context, name string) metric.Span { // or trace.Span if imported
+// Helper for tracing span context
+func traceFromContext(ctx context.Context, name string) trace.Span {
 	_, span := otel.Tracer("otel-go-demo").Start(ctx, name)
 	return span
 }
