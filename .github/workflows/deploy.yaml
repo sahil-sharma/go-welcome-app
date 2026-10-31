@@ -1,0 +1,64 @@
+name: GitOps Deploy - Raise PR for Go Welcome App Image Update
+
+on:
+    workflow_run:
+        workflows: ["Build Welcome App and Push Docker image"]
+        types:
+            - completed
+
+jobs:
+    raise-pr:
+        if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Target K8s Repository
+              uses: actions/checkout@v5
+              with:
+                  repository: sahil-sharma/k8s-stuff
+                  token: ${{ secrets.PAT_FOR_K8S_REPO }}
+                  path: helm-repo
+
+            - name: Extract Short SHA from Triggering Run
+              id: get_sha
+              run: |
+                  FULL_SHA="${{ github.event.workflow_run.head_sha }}"
+                  SHORT_SHA=$(echo "$FULL_SHA" | cut -c1-7)
+                  echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_OUTPUT
+                  echo "Triggered by commit: $FULL_SHA (Short: $SHORT_SHA)"
+
+            - name: Update Deployment Image Tag
+              run: |
+                  cd helm-repo
+                  BRANCH_NAME="update-go-welcome-app-${{ steps.get_sha.outputs.SHORT_SHA }}"
+                  git checkout -b "$BRANCH_NAME"
+
+                  # Target file path: apps/go-welcome-app/deployment.yaml
+                  MANIFEST_PATH="./apps/go-welcome-app/deployment.yaml"
+
+                  # Safely update the image tag while preserving the container/registry prefix
+                  sed -i 's|\(image: .*/go-welcome-app:\)[^ ]*|\1'"${{ steps.get_sha.outputs.SHORT_SHA }}"'|' "$MANIFEST_PATH"
+
+                  # Verify change was applied
+                  grep 'image:' "$MANIFEST_PATH"
+
+                  git config --global user.email "github-actions[bot]@users.noreply.github.com"
+                  git config --global user.name "github-actions[bot]"
+
+                  git add "$MANIFEST_PATH"
+
+                  # Commit and push only if there are actual diff changes
+                  git diff --quiet && git diff --staged --quiet || (git commit -m "chore(deps): update go-welcome-app image tag to ${{ steps.get_sha.outputs.SHORT_SHA }}" && git push origin "$BRANCH_NAME")
+
+            - name: Create Pull Request
+              run: |
+                  cd helm-repo
+                  BRANCH_NAME="update-go-welcome-app-${{ steps.get_sha.outputs.SHORT_SHA }}"
+
+                  gh pr create \
+                    --base main \
+                    --head "$BRANCH_NAME" \
+                    --title "chore(deps): update go-welcome-app image tag to ${{ steps.get_sha.outputs.SHORT_SHA }}" \
+                    --body "Automated PR updating the \`go-welcome-app\` image tag in \`apps/go-welcome-app/deployment.yaml\` to commit \`${{ steps.get_sha.outputs.SHORT_SHA }}\` following a successful build on main."
+              env:
+                  GH_TOKEN: ${{ secrets.PAT_FOR_K8S_REPO }}

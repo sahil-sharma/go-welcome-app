@@ -10,6 +10,15 @@ import (
 	"os"
 	"os/user"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // JSONLog is the structure for log entries
@@ -147,7 +156,7 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 	webhookTestKey := os.Getenv("WEBHOOK_TEST_KEY")
 
 	response := fmt.Sprintf(`
-Hello, Welcome to the meetup!!!
+Hello, Welcome to the world, folks!!!
 Host: %s
 Username: %s
 Date & Time: %s
