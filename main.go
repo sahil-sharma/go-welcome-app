@@ -216,10 +216,10 @@ func externalHandler(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
-	resp, err := client.Get("https://httpbin.org/get")
+	resp, err := client.Get("https://api.chucknorris.io/jokes/random")
 	if err != nil {
 		span.RecordError(err)
-		http.Error(w, "Failed to reach httpbin.org", http.StatusBadGateway)
+		http.Error(w, "Failed to reach api.chucknorris.io", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
