@@ -37,7 +37,8 @@ spec:
   system: idp-demo
   providesApis:
     - go-welcome-api
----
+  consumesApis:
+    - adviceslip-api
 ---
 apiVersion: backstage.io/v1alpha1
 kind: API
@@ -74,7 +75,33 @@ spec:
               description: OK
       /external:
         get:
-          summary: Fetches data from external HTTP endpoint
+          summary: Fetches random advice from Advice Slip API
           responses:
             '200':
               description: OK
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: adviceslip-api
+  title: Advice Slip JSON API
+  description: External public API providing random advice slips consumed by go-welcome-app /external.
+spec:
+  type: openapi
+  lifecycle: experimental
+  owner: group:default/go-app-team
+  system: idp-demo
+  definition: |
+    openapi: 3.0.3
+    info:
+      title: Advice Slip API
+      version: 1.0.0
+    servers:
+      - url: https://api.adviceslip.com
+    paths:
+      /advice:
+        get:
+          summary: Get random advice
+          responses:
+            '200':
+              description: Successful response containing advice JSON
